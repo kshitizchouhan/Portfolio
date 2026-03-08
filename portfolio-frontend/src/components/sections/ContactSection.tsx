@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 
 const contactInfo = [
   { icon: Mail, label: "Email", value: "chouhankshitiz25@gmail.com", href: "mailto:chouhankshitiz25@gmail.com" },
-  { icon: Phone, label: "Phone", value: "+91 9301776787", href: "tel:+919301776787" },
+  // { icon: Phone, label: "Phone", value: "+91 9301776787", href: "tel:+919301776787" },
   { icon: MapPin, label: "Location", value: "Chennai, India", href: null },
 ];
 
