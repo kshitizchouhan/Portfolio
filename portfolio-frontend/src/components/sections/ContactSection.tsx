@@ -1,0 +1,251 @@
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useState, useRef } from "react";
+import { toast } from "sonner";
+import { Mail, Phone, MapPin, Github, Linkedin, Twitter } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
+const contactInfo = [
+  { icon: Mail, label: "Email", value: "chouhankshitiz25@gmail.com", href: "mailto:chouhankshitiz25@gmail.com" },
+  { icon: Phone, label: "Phone", value: "+91 9301776787", href: "tel:+919301776787" },
+  { icon: MapPin, label: "Location", value: "Chennai, India", href: null },
+];
+
+const socials = [
+  { icon: Github, label: "GitHub", href: "https://github.com/kshitizchouhan" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/kshitiz-chouhan-3689b831a?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" },
+  { icon: Twitter, label: "Twitter", href: "https://x.com/KshitizChouhan" },
+];
+
+const ContactSection = () => {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [sending, setSending] = useState(false);
+
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+
+  const y = useTransform(scrollYProgress, [0, 1], [40, -40]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      setSending(true);
+
+      const response = await fetch("http://localhost:5000/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send message");
+      }
+
+      toast.success("Message sent successfully!");
+
+      setForm({
+        name: "",
+        email: "",
+        message: "",
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send message. Try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <section id="contact" className="section-container" ref={ref}>
+      <motion.div className="max-w-5xl mx-auto w-full" style={{ y }}>
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <p className="text-sm font-mono text-primary tracking-[0.2em] uppercase mb-2">
+            Get in Touch
+          </p>
+
+          <h2 className="text-4xl sm:text-5xl font-bold text-foreground">
+            Let's <span className="text-gradient">Connect</span>
+          </h2>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+
+          {/* CONTACT INFO */}
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            {contactInfo.map((item, i) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ x: 4 }}
+              >
+                <Card className="glass-panel border-border">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                      <item.icon className="w-4 h-4 text-primary" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {item.label}
+                      </p>
+
+                      {item.href ? (
+                        <a
+                          href={item.href}
+                          className="text-sm text-foreground hover:text-primary transition-colors cursor-none"
+                        >
+                          {item.value}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-foreground">
+                          {item.value}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+
+            {/* SOCIAL ICONS */}
+            <div className="flex gap-3 pt-2">
+              {socials.map((s) => (
+                <motion.a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors cursor-none"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                >
+                  <s.icon className="w-4 h-4" />
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* CONTACT FORM */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
+            <Card className="glass-panel border-border">
+              <CardContent className="p-8">
+                <form onSubmit={handleSubmit} className="space-y-5">
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="font-mono text-muted-foreground">
+                      Name
+                    </Label>
+
+                    <Input
+                      id="name"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, name: e.target.value }))
+                      }
+                      placeholder="Your name"
+                      maxLength={100}
+                      className="cursor-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="font-mono text-muted-foreground">
+                      Email
+                    </Label>
+
+                    <Input
+                      id="email"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, email: e.target.value }))
+                      }
+                      placeholder="your@email.com"
+                      maxLength={255}
+                      className="cursor-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="font-mono text-muted-foreground">
+                      Message
+                    </Label>
+
+                    <Textarea
+                      id="message"
+                      value={form.message}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, message: e.target.value }))
+                      }
+                      placeholder="Tell me about your project..."
+                      maxLength={1000}
+                      className="resize-none h-32 cursor-none"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={sending}
+                    className="w-full cursor-none shadow-lg shadow-primary/20"
+                  >
+                    {sending ? "Sending..." : "Send Message"}
+                  </Button>
+
+                </form>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        <motion.p
+          className="text-center text-xs text-muted-foreground mt-12 font-mono"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+        >
+          © 2026 — Built with passion & code
+        </motion.p>
+      </motion.div>
+    </section>
+  );
+};
+
+export default ContactSection;
