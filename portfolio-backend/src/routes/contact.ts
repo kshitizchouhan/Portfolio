@@ -6,18 +6,27 @@ import validator from "validator";
 const router = Router();
 
 router.post("/", async (req, res) => {
-
   try {
 
     const { name, email, message } = req.body;
 
-    if (!validator.isEmail(email)) {
+    // Validate required fields
+    if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
-        message: "Invalid email"
+        message: "All fields are required"
       });
     }
 
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email address"
+      });
+    }
+
+    // Block fake/test emails
     const blockedEmails = [
       "test@test.com",
       "test@gmail.com",
@@ -32,6 +41,7 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Save message to MongoDB
     const newMessage = new Message({
       name,
       email,
@@ -40,8 +50,14 @@ router.post("/", async (req, res) => {
 
     await newMessage.save();
 
-    await sendMail(name, email, message);
+    // Try sending email but don't fail API if email fails
+    try {
+      await sendMail(name, email, message);
+    } catch (mailError) {
+      console.error("Email sending failed:", mailError);
+    }
 
+    // Success response
     res.status(200).json({
       success: true,
       message: "Message sent successfully"
@@ -49,15 +65,14 @@ router.post("/", async (req, res) => {
 
   } catch (error) {
 
-    console.error(error);
+    console.error("Contact API error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Server Error"
+      message: "Server error"
     });
 
   }
-
 });
 
 export default router;
