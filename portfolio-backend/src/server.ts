@@ -2,11 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
+
 import adminRoute from "./routes/admin";
-
-
-
-
 import connectDB from "./config/db";
 import contactRoute from "./routes/contact";
 
@@ -14,11 +11,15 @@ dotenv.config();
 
 const app = express();
 
+// Fix for Render proxy
+app.set("trust proxy", 1);
+
+// Connect database
 connectDB();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
-app.use("/api/admin", adminRoute);
 
 // Spam protection
 const limiter = rateLimit({
@@ -30,7 +31,14 @@ const limiter = rateLimit({
 // Apply rate limit to contact API
 app.use("/api/contact", limiter);
 
+// Routes
+app.use("/api/admin", adminRoute);
 app.use("/api/contact", contactRoute);
+
+// Health check route
+app.get("/", (req, res) => {
+  res.send("Portfolio Backend Running 🚀");
+});
 
 const PORT = process.env.PORT || 5000;
 
