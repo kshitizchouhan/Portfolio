@@ -1,17 +1,19 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
+    pass: process.env.EMAIL_PASS
+  }
 });
 
 const sendMail = async (name: string, email: string, message: string) => {
   try {
 
-    // Email to you
+    // Mail to you
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -20,23 +22,15 @@ const sendMail = async (name: string, email: string, message: string) => {
 Name: ${name}
 Email: ${email}
 Message: ${message}
-`,
+`
     });
 
-    // Auto reply to user
+    // Auto reply
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Thanks for contacting me",
-      text: `
-Hi ${name},
-
-Thank you for contacting me through my portfolio website.
-I have received your message and will reply soon.
-
-Best regards,
-Kshitiz Chouhan
-`,
+      text: `Hi ${name}, thank you for contacting me.`
     });
 
     console.log("Emails sent successfully");
