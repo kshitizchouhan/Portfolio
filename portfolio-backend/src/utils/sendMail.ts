@@ -1,50 +1,48 @@
-import dotenv from "dotenv";
-dotenv.config();
+import nodemailer from "nodemailer";
 
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 const sendMail = async (name: string, email: string, message: string) => {
   try {
 
-    const adminEmail = process.env.EMAIL_USER || "kshitizchouhan14@gmail.com";
-
     // Email to you
-    const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: "chouhankshitiz25@gmail.com",
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
       subject: "New Portfolio Message",
       text: `
 Name: ${name}
 Email: ${email}
 Message: ${message}
-`
+`,
     });
 
-    console.log("Resend response:", data, error);
-
     // Auto reply to user
-//     await resend.emails.send({
-//       from: "onboarding@resend.dev",
-//       to: email,
-//       subject: "Thanks for contacting me",
-//       text: `
-// Hi ${name},
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Thanks for contacting me",
+      text: `
+Hi ${name},
 
-// Thank you for contacting me through my portfolio website.
+Thank you for contacting me through my portfolio website.
+I have received your message and will reply soon.
 
-// I have received your message and will reply soon.
-
-// Best regards,
-// Kshitiz Chouhan
-// `
-//     });
+Best regards,
+Kshitiz Chouhan
+`,
+    });
 
     console.log("Emails sent successfully");
 
   } catch (error) {
-    console.error("Resend email error:", error);
+    console.error("Email error:", error);
   }
 };
 
