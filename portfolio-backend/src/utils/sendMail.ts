@@ -20,10 +20,11 @@ export const sendMail = async (name: string, email: string, message: string) => 
 
     if (!accessToken) throw new Error("Failed to generate access token.");
 
+    // Using Port 587 (Often more open on Render than 465)
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false, // Port 587 ke liye false hona chahiye
       auth: {
         type: "OAuth2",
         user: process.env.EMAIL_USER,
@@ -32,39 +33,41 @@ export const sendMail = async (name: string, email: string, message: string) => 
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
         accessToken: accessToken,
       },
-      connectionTimeout: 15000, 
+      // Render's slow network ke liye timeouts badha diye hain
+      connectionTimeout: 30000, 
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
       tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        minVersion: "TLSv1.2"
       }
     } as any);
 
-    // This is the magic line that fixes the Render IPv6 error
+    // FORCE IPv4 (This is crucial for Render)
     (transporter as any).options.dns = { family: 4 };
 
     const mailOptions = {
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, // Sent ONLY to you
-      replyTo: email,           // Click 'Reply' in Gmail to talk to the sender
-      subject: `New Message from ${name}`,
+      to: process.env.EMAIL_USER,
+      replyTo: email,
+      subject: `Direct Message from ${name}`,
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <h2 style="color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px;">Portfolio Inquiry</h2>
-          <p><strong>Sender Name:</strong> ${name}</p>
-          <p><strong>Sender Email:</strong> ${email}</p>
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 15px;">
-            <p><strong>Message:</strong></p>
-            <p style="white-space: pre-line;">${message}</p>
-          </div>
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
+          <h3>New Message Received</h3>
+          <p><b>Name:</b> ${name}</p>
+          <p><b>Email:</b> ${email}</p>
+          <p><b>Message:</b> ${message}</p>
         </div>
       `,
     };
 
+    console.log("Attempting to send email via Port 587...");
     const result = await transporter.sendMail(mailOptions);
-    console.log("Email received successfully! ✅");
-    return { success: true, messageId: result.messageId };
+    console.log("Email sent successfully! ✅");
+    return { success: true };
 
   } catch (error: any) {
-    console.error("Mail Error:", error.message);
+    console.error("Backend Mail Error:", error.message);
     throw error;
   }
 };
