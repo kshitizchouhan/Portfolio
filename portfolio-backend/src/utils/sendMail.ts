@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
 
@@ -23,11 +20,10 @@ export const sendMail = async (name: string, email: string, message: string) => 
 
     if (!accessToken) throw new Error("Failed to generate access token.");
 
-    // ULTIMATE CLOUD CONFIGURATION
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
-      secure: true, // Use SSL
+      secure: true,
       auth: {
         type: "OAuth2",
         user: process.env.EMAIL_USER,
@@ -36,48 +32,39 @@ export const sendMail = async (name: string, email: string, message: string) => 
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
         accessToken: accessToken,
       },
-      // THIS BLOCK FORCES RENDER TO USE IPV4
-      connectionTimeout: 20000, // Increase timeout for slow cloud starts
-      greetingTimeout: 20000,
-      socketTimeout: 20000,
+      connectionTimeout: 15000, 
       tls: {
-        rejectUnauthorized: false,
-        servername: "smtp.gmail.com"
+        rejectUnauthorized: false
       }
     } as any);
 
-    // FORCE IPV4: This is the magic line for Render
+    // This is the magic line that fixes the Render IPv6 error
     (transporter as any).options.dns = { family: 4 };
 
-    // --- Emails ---
-    const adminMail = {
+    const mailOptions = {
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      replyTo: email,
+      to: process.env.EMAIL_USER, // Sent ONLY to you
+      replyTo: email,           // Click 'Reply' in Gmail to talk to the sender
       subject: `New Message from ${name}`,
-      html: `<p><b>From:</b> ${name} (${email})</p><p><b>Message:</b> ${message}</p>`
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px;">Portfolio Inquiry</h2>
+          <p><strong>Sender Name:</strong> ${name}</p>
+          <p><strong>Sender Email:</strong> ${email}</p>
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 15px;">
+            <p><strong>Message:</strong></p>
+            <p style="white-space: pre-line;">${message}</p>
+          </div>
+        </div>
+      `,
     };
 
-    const autoReply = {
-      from: `"Kshitiz Chouhan" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Thank you for contacting me!",
-      html: `<p>Hi ${name},</p><p>I have received your message. I'll get back to you soon!</p>`
-    };
-
-    await transporter.sendMail(adminMail);
-    await transporter.sendMail(autoReply);
-
-    console.log("Emails sent successfully via IPv4! ✅");
-    return { success: true };
+    const result = await transporter.sendMail(mailOptions);
+    console.log("Email received successfully! ✅");
+    return { success: true, messageId: result.messageId };
 
   } catch (error: any) {
-    console.error("Critical Mail Error:", error.message);
-    
-    // Fallback log to see if it's still trying IPv6
-    if (error.address) {
-       console.log("Attempted Address:", error.address); 
-    }
+    console.error("Mail Error:", error.message);
     throw error;
   }
 };
