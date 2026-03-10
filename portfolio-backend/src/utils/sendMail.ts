@@ -6,10 +6,6 @@ import { google } from "googleapis";
 
 const OAuth2 = google.auth.OAuth2;
 
-/**
- * Google OAuth2 Client Setup
- * Ensure the Redirect URI matches exactly what you set in Google Cloud Console.
- */
 const oauth2Client = new OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -27,12 +23,14 @@ export const sendMail = async (name: string, email: string, message: string) => 
     const accessToken = accessTokenResponse?.token;
 
     if (!accessToken) {
-      throw new Error("Failed to generate access token. Please check your Refresh Token.");
+      throw new Error("Failed to generate access token. Check your credentials.");
     }
 
-    // 2. Create Transporter
+    // 2. Create Transporter with Cloud-Friendly Settings
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,              // Switched to 587 for better compatibility on Render
+      secure: false,          // Must be false for port 587
       auth: {
         type: "OAuth2",
         user: process.env.EMAIL_USER,
@@ -41,49 +39,48 @@ export const sendMail = async (name: string, email: string, message: string) => 
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
         accessToken: accessToken,
       },
+      tls: {
+        // This helps bypass the ENETUNREACH/Network issues on cloud servers
+        rejectUnauthorized: false 
+      }
     } as any);
 
-    // --- 3. ADMIN NOTIFICATION EMAIL (Sent to you) ---
+    // --- 3. ADMIN NOTIFICATION (To You) ---
     const adminMailOptions = {
-      from: `Portfolio Contact <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, 
-      replyTo: email, 
-      subject: `New Message from ${name} via Portfolio`,
+      from: `"Portfolio Alert" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+      replyTo: email,
+      subject: `New Message from ${name}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
-          <h2 style="color: #007bff;">New Contact Form Submission</h2>
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
+          <h2>New Contact Request</h2>
           <p><strong>Name:</strong> ${name}</p>
           <p><strong>Email:</strong> ${email}</p>
           <p><strong>Message:</strong></p>
-          <div style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
-            ${message}
-          </div>
+          <blockquote style="background: #f9f9f9; padding: 10px;">${message}</blockquote>
         </div>
       `,
     };
 
-    // --- 4. AUTO-REPLY EMAIL (Sent to the User) ---
+    // --- 4. AUTO-REPLY (To User) ---
     const autoReplyOptions = {
-      from: `Kshitiz Chouhan <${process.env.EMAIL_USER}>`,
-      to: email, 
+      from: `"Kshitiz Chouhan" <${process.env.EMAIL_USER}>`,
+      to: email,
       subject: "Thank you for reaching out!",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eee;">
-          <h2 style="color: #007bff;">Hello ${name},</h2>
-          <p>Thank you for contacting me through my portfolio. I have received your message and I appreciate you reaching out!</p>
-          <p>I will review your message and get back to you as soon as possible.</p>
-          <br />
-          <p>Best Regards,</p>
-          <p><strong>Kshitiz Chouhan</strong><br />MERN Stack Developer</p>
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h3>Hello ${name},</h3>
+          <p>Thanks for visiting my portfolio. I've received your message and will get back to you shortly.</p>
+          <p>Best Regards,<br><strong>Kshitiz Chouhan</strong></p>
         </div>
       `,
     };
 
-    // Send both emails
+    // 5. Execute sending
     await transporter.sendMail(adminMailOptions);
     await transporter.sendMail(autoReplyOptions);
 
-    console.log("Admin notification and Auto-reply sent successfully! ✅");
+    console.log("Email sent successfully! ✅");
     return { success: true };
 
   } catch (error: any) {
