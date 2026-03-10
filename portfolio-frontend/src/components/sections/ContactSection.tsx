@@ -31,19 +31,18 @@ const ContactSection = () => {
 
   const y = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
-  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Strict validation: Ensure no fields are empty or just whitespace
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      toast.error("Bhai, saare fields bhar do! (Please fill all fields)");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
     try {
       setSending(true);
 
-      // LIVE PRODUCTION API URL
       const API_URL = "https://portfolio-backend-u9h2.onrender.com/api/contact";
 
       const response = await fetch(API_URL, {
@@ -57,17 +56,17 @@ const ContactSection = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Server side issue");
+        throw new Error(data.message || "Failed to send message.");
       }
 
-      toast.success("Message sent successfully! Check your inbox soon. ✅");
+      toast.success("Message sent successfully! I will get back to you soon. ✅");
       
-      // Reset Form
+      // Reset form on success
       setForm({ name: "", email: "", message: "" });
 
     } catch (error: any) {
-      console.error("Fetch Error:", error);
-      toast.error(error.message || "Failed to connect to server. Check your connection.");
+      console.error("Submission Error:", error);
+      toast.error(error.message || "Unable to reach the server. Please try again later.");
     } finally {
       setSending(false);
     }
@@ -92,7 +91,7 @@ const ContactSection = () => {
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          {/* LEFT SIDE: CONTACT INFO */}
+          {/* CONTACT INFO CARD */}
           <motion.div
             className="space-y-4"
             initial={{ opacity: 0, x: -30 }}
@@ -142,7 +141,7 @@ const ContactSection = () => {
             </div>
           </motion.div>
 
-          {/* RIGHT SIDE: FORM */}
+          {/* FORM CARD */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -156,9 +155,10 @@ const ContactSection = () => {
                     <Label htmlFor="name" className="font-mono text-muted-foreground">Name</Label>
                     <Input
                       id="name"
+                      required
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="Your name"
+                      placeholder="Your Full Name"
                       className="bg-background/50"
                     />
                   </div>
@@ -168,9 +168,10 @@ const ContactSection = () => {
                     <Input
                       id="email"
                       type="email"
+                      required
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="your@email.com"
+                      placeholder="email@example.com"
                       className="bg-background/50"
                     />
                   </div>
@@ -179,9 +180,10 @@ const ContactSection = () => {
                     <Label htmlFor="message" className="font-mono text-muted-foreground">Message</Label>
                     <Textarea
                       id="message"
+                      required
                       value={form.message}
                       onChange={(e) => setForm({ ...form, message: e.target.value })}
-                      placeholder="Tell me about your project..."
+                      placeholder="Tell me about your project or inquiry..."
                       className="resize-none h-32 bg-background/50"
                     />
                   </div>
@@ -191,7 +193,7 @@ const ContactSection = () => {
                     disabled={sending}
                     className="w-full shadow-lg shadow-primary/20"
                   >
-                    {sending ? "Sending..." : "Send Message"}
+                    {sending ? "Sending Message..." : "Send Message"}
                   </Button>
                 </form>
               </CardContent>
