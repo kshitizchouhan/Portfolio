@@ -10,13 +10,12 @@ import { Label } from "@/components/ui/label";
 
 const contactInfo = [
   { icon: Mail, label: "Email", value: "chouhankshitiz25@gmail.com", href: "mailto:chouhankshitiz25@gmail.com" },
-  // { icon: Phone, label: "Phone", value: "+91 9301776787", href: "tel:+919301776787" },
   { icon: MapPin, label: "Location", value: "Chennai, India", href: null },
 ];
 
 const socials = [
   { icon: Github, label: "GitHub", href: "https://github.com/kshitizchouhan" },
-  { icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/kshitiz-chouhan-3689b831a?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/kshitiz-chouhan-3689b831a" },
   { icon: Twitter, label: "Twitter", href: "https://x.com/KshitizChouhan" },
 ];
 
@@ -32,18 +31,22 @@ const ContactSection = () => {
 
   const y = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
+  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      toast.error("Please fill in all fields.");
+      toast.error("Bhai, saare fields bhar do! (Please fill all fields)");
       return;
     }
 
     try {
       setSending(true);
 
-      const response = await fetch("http://localhost:5000/api/contact", {
+      // LIVE PRODUCTION API URL
+      const API_URL = "https://portfolio-backend-u9h2.onrender.com/api/contact";
+
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,27 +57,24 @@ const ContactSection = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to send message");
+        throw new Error(data.message || "Server side issue");
       }
 
-      toast.success("Message sent successfully!");
+      toast.success("Message sent successfully! Check your inbox soon. ✅");
+      
+      // Reset Form
+      setForm({ name: "", email: "", message: "" });
 
-      setForm({
-        name: "",
-        email: "",
-        message: "",
-      });
-
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to send message. Try again.");
+    } catch (error: any) {
+      console.error("Fetch Error:", error);
+      toast.error(error.message || "Failed to connect to server. Check your connection.");
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <section id="contact" className="section-container" ref={ref}>
+    <section id="contact" className="section-container pb-20" ref={ref}>
       <motion.div className="max-w-5xl mx-auto w-full" style={{ y }}>
         <motion.div
           className="mb-12"
@@ -86,15 +86,13 @@ const ContactSection = () => {
           <p className="text-sm font-mono text-primary tracking-[0.2em] uppercase mb-2">
             Get in Touch
           </p>
-
           <h2 className="text-4xl sm:text-5xl font-bold text-foreground">
             Let's <span className="text-gradient">Connect</span>
           </h2>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-8">
-
-          {/* CONTACT INFO */}
+          {/* LEFT SIDE: CONTACT INFO */}
           <motion.div
             className="space-y-4"
             initial={{ opacity: 0, x: -30 }}
@@ -105,34 +103,22 @@ const ContactSection = () => {
             {contactInfo.map((item, i) => (
               <motion.div
                 key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ x: 4 }}
               >
                 <Card className="glass-panel border-border">
                   <CardContent className="p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <item.icon className="w-4 h-4 text-primary" />
                     </div>
-
                     <div>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        {item.label}
-                      </p>
-
+                      <p className="text-xs text-muted-foreground font-mono">{item.label}</p>
                       {item.href ? (
-                        <a
-                          href={item.href}
-                          className="text-sm text-foreground hover:text-primary transition-colors cursor-none"
-                        >
+                        <a href={item.href} className="text-sm text-foreground hover:text-primary transition-colors">
                           {item.value}
                         </a>
                       ) : (
-                        <p className="text-sm text-foreground">
-                          {item.value}
-                        </p>
+                        <p className="text-sm text-foreground">{item.value}</p>
                       )}
                     </div>
                   </CardContent>
@@ -140,7 +126,6 @@ const ContactSection = () => {
               </motion.div>
             ))}
 
-            {/* SOCIAL ICONS */}
             <div className="flex gap-3 pt-2">
               {socials.map((s) => (
                 <motion.a
@@ -148,7 +133,7 @@ const ContactSection = () => {
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors cursor-none"
+                  className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                   whileHover={{ scale: 1.1, y: -2 }}
                 >
                   <s.icon className="w-4 h-4" />
@@ -157,7 +142,7 @@ const ContactSection = () => {
             </div>
           </motion.div>
 
-          {/* CONTACT FORM */}
+          {/* RIGHT SIDE: FORM */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -167,67 +152,47 @@ const ContactSection = () => {
             <Card className="glass-panel border-border">
               <CardContent className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-5">
-
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="font-mono text-muted-foreground">
-                      Name
-                    </Label>
-
+                    <Label htmlFor="name" className="font-mono text-muted-foreground">Name</Label>
                     <Input
                       id="name"
                       value={form.name}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, name: e.target.value }))
-                      }
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder="Your name"
-                      maxLength={100}
-                      className="cursor-none"
+                      className="bg-background/50"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="font-mono text-muted-foreground">
-                      Email
-                    </Label>
-
+                    <Label htmlFor="email" className="font-mono text-muted-foreground">Email</Label>
                     <Input
                       id="email"
                       type="email"
                       value={form.email}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, email: e.target.value }))
-                      }
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="your@email.com"
-                      maxLength={255}
-                      className="cursor-none"
+                      className="bg-background/50"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message" className="font-mono text-muted-foreground">
-                      Message
-                    </Label>
-
+                    <Label htmlFor="message" className="font-mono text-muted-foreground">Message</Label>
                     <Textarea
                       id="message"
                       value={form.message}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, message: e.target.value }))
-                      }
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
                       placeholder="Tell me about your project..."
-                      maxLength={1000}
-                      className="resize-none h-32 cursor-none"
+                      className="resize-none h-32 bg-background/50"
                     />
                   </div>
 
                   <Button
                     type="submit"
                     disabled={sending}
-                    className="w-full cursor-none shadow-lg shadow-primary/20"
+                    className="w-full shadow-lg shadow-primary/20"
                   >
                     {sending ? "Sending..." : "Send Message"}
                   </Button>
-
                 </form>
               </CardContent>
             </Card>
@@ -238,10 +203,9 @@ const ContactSection = () => {
           className="text-center text-xs text-muted-foreground mt-12 font-mono"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
           transition={{ delay: 0.3 }}
         >
-          © 2026 — Built with passion & code
+          © 2026 — Kshitiz Chouhan
         </motion.p>
       </motion.div>
     </section>
