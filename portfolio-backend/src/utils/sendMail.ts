@@ -18,18 +18,16 @@ oauth2Client.setCredentials({
 
 export const sendMail = async (name: string, email: string, message: string) => {
   try {
-    // 1. Generate fresh access token
     const accessTokenResponse = await oauth2Client.getAccessToken();
     const accessToken = accessTokenResponse?.token;
 
-    if (!accessToken) {
-      throw new Error("Failed to generate access token.");
-    }
+    if (!accessToken) throw new Error("Failed to generate access token.");
 
-    // 2. Create Transporter using 'service' instead of host/port
-    // This helps bypass the IPv6 ENETUNREACH error on Render
+    // ULTIMATE CLOUD CONFIGURATION
     const transporter = nodemailer.createTransport({
-      service: "gmail", 
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, // Use SSL
       auth: {
         type: "OAuth2",
         user: process.env.EMAIL_USER,
@@ -38,57 +36,48 @@ export const sendMail = async (name: string, email: string, message: string) => 
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
         accessToken: accessToken,
       },
-      // Force IPv4 and TLS settings
+      // THIS BLOCK FORCES RENDER TO USE IPV4
+      connectionTimeout: 20000, // Increase timeout for slow cloud starts
+      greetingTimeout: 20000,
+      socketTimeout: 20000,
       tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        servername: "smtp.gmail.com"
       }
     } as any);
 
-    // --- 3. ADMIN NOTIFICATION (English) ---
-    const adminMailOptions = {
+    // FORCE IPV4: This is the magic line for Render
+    (transporter as any).options.dns = { family: 4 };
+
+    // --- Emails ---
+    const adminMail = {
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
-      subject: `New Message from ${name} via Portfolio`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-          <h2 style="color: #007bff;">New Submission</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Message:</strong></p>
-          <div style="background: #f4f4f4; padding: 15px; border-radius: 4px; font-style: italic;">
-            "${message}"
-          </div>
-        </div>
-      `,
+      subject: `New Message from ${name}`,
+      html: `<p><b>From:</b> ${name} (${email})</p><p><b>Message:</b> ${message}</p>`
     };
 
-    // --- 4. AUTO-REPLY (English) ---
-    const autoReplyOptions = {
+    const autoReply = {
       from: `"Kshitiz Chouhan" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Thank you for reaching out!",
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; color: #333;">
-          <h2>Hi ${name},</h2>
-          <p>Thank you for your message! I've successfully received your inquiry through my portfolio website.</p>
-          <p>I will get back to you as soon as possible. In the meantime, feel free to check out my latest projects on GitHub.</p>
-          <br />
-          <p>Best Regards,</p>
-          <p><strong>Kshitiz Chouhan</strong><br />MERN Stack Developer</p>
-        </div>
-      `,
+      subject: "Thank you for contacting me!",
+      html: `<p>Hi ${name},</p><p>I have received your message. I'll get back to you soon!</p>`
     };
 
-    // 5. Send both emails
-    await transporter.sendMail(adminMailOptions);
-    await transporter.sendMail(autoReplyOptions);
+    await transporter.sendMail(adminMail);
+    await transporter.sendMail(autoReply);
 
-    console.log("Both emails sent successfully! ✅");
+    console.log("Emails sent successfully via IPv4! ✅");
     return { success: true };
 
   } catch (error: any) {
-    console.error("Mail Delivery Error:", error.message);
+    console.error("Critical Mail Error:", error.message);
+    
+    // Fallback log to see if it's still trying IPv6
+    if (error.address) {
+       console.log("Attempted Address:", error.address); 
+    }
     throw error;
   }
 };
